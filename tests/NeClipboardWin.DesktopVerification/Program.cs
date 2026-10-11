@@ -139,6 +139,9 @@ internal static class ClipboardSnapshotFormats
         _ => null
     };
 
+    internal static bool CanPrepareReplay(bool ready, uint ownedSequence, uint currentSequence) => ready && ownedSequence != 0 && ownedSequence == currentSequence;
+    internal static bool ReplayObserved(bool prepared, uint preparedSequence, uint currentSequence, bool matches) => prepared && preparedSequence != 0 && currentSequence != 0 && currentSequence != preparedSequence && matches;
+
     internal static int SelfTest()
     {
         // Pure in-memory regression checks. No access to the system clipboard.
@@ -160,6 +163,15 @@ internal static class ClipboardSnapshotFormats
         using var shortStream = new MemoryStream(new byte[3]);
         using var longStream = new MemoryStream(new byte[5]);
         passed &= ClonePrivacyDword(shortStream) is null && ClonePrivacyDword(longStream) is null;
+        passed &= CanPrepareReplay(true, 10, 10) && !CanPrepareReplay(false, 10, 10)
+            && !CanPrepareReplay(true, 0, 0) && !CanPrepareReplay(true, 10, 11)
+            && !ReplayObserved(false, 10, 11, true) && !ReplayObserved(true, 0, 11, true)
+            && !ReplayObserved(true, 10, 0, true)
+            && !ReplayObserved(true, 10, 10, true) && !ReplayObserved(true, 10, 11, false)
+            && ReplayObserved(true, 10, 11, true);
+        var consumedGate = true;
+        if (ReplayObserved(consumedGate, 10, 11, true)) consumedGate = false;
+        passed &= !ReplayObserved(consumedGate, 10, 12, true);
         Console.WriteLine(passed ? "PASS strict clipboard snapshot format regression (no system clipboard access)" : "FAIL strict clipboard snapshot format regression");
         return passed ? 0 : 1;
     }
@@ -170,6 +182,7 @@ internal sealed class ReceiverWindow : Form
     private const string MarkerFormat = "NeClipboardWin.SyntheticQa";
     private const string MarkerValue = "NeClipboardWin-QA";
     private const string SyntheticText = "NeClipboardWin-QA:\r\nПроверка текста, emoji 😀 и переносов.\r\nПоследняя строка: tail-search-token.";
+    private const string ReplaySentinel = "NeClipboardWin-QA: replay-sentinel-not-target";
     private readonly string _directory;
     private readonly string[] _files;
     private readonly TextBox _receiver = new() { Multiline = true, AcceptsReturn = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, AccessibleName = "Поле-получатель синтетического текста" };
@@ -182,7 +195,8 @@ internal sealed class ReceiverWindow : Form
     private uint _snapshotSequence;
     private uint _ownedSequence;
     private bool _hotkeyReserved;
-    private bool _clearedForPlayback;
+    private bool _replayPrepared;
+    private uint _preparedSequence;
 
     internal ReceiverWindow(string directory)
     {
@@ -209,7 +223,7 @@ internal sealed class ReceiverWindow : Form
         AddButton(actions, "1. Текст → буфер", PublishText);
         AddButton(actions, "2. Изображение → буфер", PublishImage);
         AddButton(actions, "3. Файлы → буфер", PublishFiles);
-        AddButton(actions, "Очистить буфер перед проверкой", ClearForPlayback);
+        AddButton(actions, "Контрольный текст перед вставкой", PrepareReplaySentinel);
         AddButton(actions, "Проверить вставленный текст", VerifyText);
         AddButton(actions, "Проверить PNG в буфере", VerifyImage);
         AddButton(actions, "Проверить файлы в буфере", VerifyFiles);
@@ -308,20 +322,22 @@ internal sealed class ReceiverWindow : Form
         return data;
     }
 
-    private void SetSyntheticClipboard(DataObject data, string name)
+    private bool SetSyntheticClipboard(DataObject data, string name)
     {
         if (GetClipboardSequenceNumber() != (_ownedSequence == 0 ? _snapshotSequence : _ownedSequence))
         {
             _status.Text = "Буфер изменился. Сначала проверьте результат вставки; стороннее новое содержимое не перезаписывается.";
             Record("publish-refused-newer-clipboard", false);
-            return;
+            return false;
         }
         Clipboard.SetDataObject(data, copy: true);
-        _clearedForPlayback = false;
+        _replayPrepared = false;
+        _preparedSequence = 0;
         _ownedSequence = GetClipboardSequenceNumber();
         Record(name, true);
         _status.Text = "Синтетический буфер готов. Откройте NeClipboard, найдите запись и выберите её.";
         _receiver.Focus();
+        return true;
     }
 
     private void PublishText()
@@ -347,48 +363,74 @@ internal sealed class ReceiverWindow : Form
         SetSyntheticClipboard(data, "publish-synthetic-files");
     }
 
-    private void ClearForPlayback()
+    private void PrepareReplaySentinel()
     {
-        if (_ownedSequence == 0 || GetClipboardSequenceNumber() != _ownedSequence)
+        _replayPrepared = false;
+        _preparedSequence = 0;
+        if (!ClipboardSnapshotFormats.CanPrepareReplay(_ready, _ownedSequence, GetClipboardSequenceNumber()))
         {
-            _status.Text = "Буфер уже изменился. Новое стороннее содержимое не очищается.";
+            _status.Text = "Буфер уже изменился. Новое стороннее содержимое не перезаписывается.";
             return;
         }
-        Clipboard.Clear();
-        _ownedSequence = GetClipboardSequenceNumber();
-        _clearedForPlayback = true;
-        Record("clipboard-cleared-before-replay", true);
-        _status.Text = "Буфер пуст. Теперь выберите сохранённую запись в NeClipboard и проверьте результат.";
+        var sentinel = SyntheticObject();
+        sentinel.SetData(DataFormats.UnicodeText, ReplaySentinel);
+        if (!SetSyntheticClipboard(sentinel, "publish-replay-sentinel")) return;
+        var sequence = _ownedSequence;
+        var matches = GetClipboardSequenceNumber() == sequence && Clipboard.ContainsText(TextDataFormat.UnicodeText)
+            && Clipboard.GetText(TextDataFormat.UnicodeText) == ReplaySentinel
+            && !Clipboard.ContainsImage() && !Clipboard.ContainsFileDropList()
+            && GetClipboardSequenceNumber() == sequence;
+        if (!matches)
+        {
+            _status.Text = "Контрольный текст не подтверждён; проверка вставки не подготовлена.";
+            Record("replay-sentinel-confirmed", false);
+            return;
+        }
+        _preparedSequence = sequence;
+        _replayPrepared = true;
+        _receiver.Clear();
+        Record("replay-sentinel-confirmed", true);
+        _status.Text = "В буфере другой контрольный текст. Выберите прежнюю запись в NeClipboard и проверьте результат.";
         _receiver.Focus();
     }
 
     private void VerifyText()
     {
-        var passed = _clearedForPlayback && _receiver.Text.ReplaceLineEndings("\n") == SyntheticText.ReplaceLineEndings("\n");
+        var sequence = GetClipboardSequenceNumber();
+        var clipboardMatches = Clipboard.ContainsText(TextDataFormat.UnicodeText) && Clipboard.GetText(TextDataFormat.UnicodeText) == SyntheticText;
+        var passed = ClipboardSnapshotFormats.ReplayObserved(_replayPrepared, _preparedSequence, sequence,
+            clipboardMatches && _receiver.Text.ReplaceLineEndings("\n") == SyntheticText.ReplaceLineEndings("\n")) && GetClipboardSequenceNumber() == sequence;
         Record("receiver-text-equals-synthetic", passed);
-        if (Clipboard.ContainsText(TextDataFormat.UnicodeText) && Clipboard.GetText(TextDataFormat.UnicodeText) == SyntheticText)
-            _ownedSequence = GetClipboardSequenceNumber();
+        if (clipboardMatches && GetClipboardSequenceNumber() == sequence) _ownedSequence = sequence;
+        if (passed) _replayPrepared = false;
         _status.Text = passed ? "PASS: вставленный текст совпал целиком, включая Unicode и переносы." : "FAIL: поле-получатель не совпало с синтетическим текстом.";
     }
 
     private void VerifyImage()
     {
+        var sequence = GetClipboardSequenceNumber();
         using var image = Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
         using var actual = image is null ? null : new Bitmap(image);
         using var expected = CreateSyntheticBitmap();
-        var passed = _clearedForPlayback && actual is { Width: 2, Height: 2 };
+        var passed = actual is { Width: 2, Height: 2 };
         if (passed)
             for (var y = 0; y < 2; y++) for (var x = 0; x < 2; x++) passed &= actual!.GetPixel(x, y).ToArgb() == expected.GetPixel(x, y).ToArgb();
+        var clipboardMatches = passed;
+        passed = ClipboardSnapshotFormats.ReplayObserved(_replayPrepared, _preparedSequence, sequence, clipboardMatches) && GetClipboardSequenceNumber() == sequence;
         Record("clipboard-image-equals-synthetic", passed);
-        if (passed) _ownedSequence = GetClipboardSequenceNumber();
+        if (clipboardMatches && GetClipboardSequenceNumber() == sequence) _ownedSequence = sequence;
+        if (passed) _replayPrepared = false;
         _status.Text = passed ? "PASS: изображение из буфера совпало по всем четырём пикселям." : "FAIL: изображение не совпало с синтетическим образцом.";
     }
 
     private void VerifyFiles()
     {
-        var passed = _clearedForPlayback && Clipboard.ContainsFileDropList() && Clipboard.GetFileDropList().Cast<string>().SequenceEqual(_files, StringComparer.Ordinal);
+        var sequence = GetClipboardSequenceNumber();
+        var clipboardMatches = Clipboard.ContainsFileDropList() && Clipboard.GetFileDropList().Cast<string>().SequenceEqual(_files, StringComparer.Ordinal);
+        var passed = ClipboardSnapshotFormats.ReplayObserved(_replayPrepared, _preparedSequence, sequence, clipboardMatches) && GetClipboardSequenceNumber() == sequence;
         Record("clipboard-files-equal-synthetic", passed);
-        if (passed) _ownedSequence = GetClipboardSequenceNumber();
+        if (clipboardMatches && GetClipboardSequenceNumber() == sequence) _ownedSequence = sequence;
+        if (passed) _replayPrepared = false;
         _status.Text = passed ? "PASS: список обоих синтетических путей совпал полностью." : "FAIL: список путей не совпал с синтетическим образцом.";
     }
 

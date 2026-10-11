@@ -13,11 +13,12 @@ The existing public Site was updated, not replaced with another project.
 
 - Version 11 production build: PASS (existing upstream dynamic-import warnings retained). TypeScript `--noEmit` and FAQ checks below were performed on older versions, not rerun for this screenshot/content-only change.
 - Version 11 public home opened in the browser: caption, GitHub link, actual image load 768×674 and light desktop layout confirmed. Local proof: `outputs/neclipboard-site-v11-proof.png` in the parent workspace.
-- Version 11 local preview desktop and requested 390×844 mobile viewport: native image loaded; DOM content width equals client width (375 CSS px), no observed horizontal overflow. Browser viewport override reset afterwards. This is not a fresh mobile public-environment check.
+- Version 11 local preview desktop/mobile and a subsequent **public** 390×844 mobile viewport: native light image loaded 768×674; DOM scroll width equals client width (375 CSS px), no observed horizontal overflow. Browser viewport override reset afterwards.
 - Version 11 public changelog navigation: both latest shutdown/accessibility fixes visible, candidate disclaimer retained. Expanded .NET FAQ: historical PASS, not repeated in version 11.
 - Home/changelog prerender: PASS. Removed unused starter API endpoint.
 - Version 11 replaces the schematic with full, unedited native light/dark QA-window screenshots from the exact e099/28957d4 application. Only synthetic text/file entries are shown; test profile and disabled integrations are explicitly labelled. No generated UI or personal profile is presented as product evidence. Both assets packaged; light asset rendering confirmed in browser. Dark browser media selection remains unverified.
 - CSS follows system light/dark preference and reduced-motion settings. This run visually inspected the light Site only; dark browser rendering and a full accessibility audit remain unverified.
+- Both public native JPEGs downloaded to RAM only and matched local assets: light 41,823 bytes, SHA-256 `45f5466fe5fa10248a552bea1c96b1d9e36782d6fe35bb4b4e4db07d1173e1d5`; dark 44,029 bytes, `acec63b7a4365e2f6c9832322cf17e894b5302aa16dd46c9f7adae6b4b2cfb61`. Asset equality does not verify browser dark-media selection.
 
 ## Dependency risk
 

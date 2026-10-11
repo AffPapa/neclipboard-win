@@ -14,6 +14,16 @@ Commit `28957d4a3645b0b8c945b753ec409986c516da7c`, EXE SHA-256 `e09942e870045c4b
 
 **Concurrent coordinator UI tests and uncontrolled workstation activity** make this a functional load regression check, not a controlled speed comparison to earlier results. Input-idle is not rendered readiness or hotkey latency. Sampled memory is not steady-state allocation or leak evidence. Whole-process time includes the one-second QA timer and awaited shutdown serialization. Raw ignored evidence: `artifacts/profile-scaling-f3c75ca54f3541c2aa8db3565e7bf948/{environment,samples,summary,completion,concurrency-context}.json`. Three synthetic profiles were removed after successful completion.
 
+## Final candidate: completed isolated idle
+
+The same `e09942e8…` EXE ran an empty interactive isolated QA profile for **601.609 seconds / 121 observations** after a five-second warmup. No clipboard listener, hotkey, tray or production profile. Workstation activity was uncontrolled; the coordinator performed read-only clipboard-format diagnostics and public Site checks during the interval. Hash remained unchanged; no diagnostic file appeared. The observer stopped only its own process and removed the validated synthetic profile.
+
+CPU delta 2015.625 ms: **0.335039% of one logical CPU**, 0.020940% across 16. Private Bytes 91.578→99.512 MiB, range 75.746–99.547; Working Set 118.668→113.164 MiB; handles 602→618, range 589–621; threads 14→12.
+
+The aggregate growth is not monotonic: 90.268–576.546 seconds stayed within a 92 KiB Private Bytes range and 589–593 handles. A late 581.560→586.575-second interval added 23.398 MiB Private Bytes, 29 handles and 1937.5 ms CPU (96.124% of total measured CPU). Its cause was not profiled. The final ten seconds are insufficient to establish a new plateau. **Neither a leak nor leak freedom is proved; production idle remains pending.** Next useful diagnostic is a single 12–15-minute repeat with runtime allocation/GC/heap counters and UTC correlation, not repeated blind startup tests or forced GC.
+
+Raw ignored evidence: `artifacts/idle-final-e099-12161cf505024caf88408c8b37d1d361/{environment,idle-samples,idle-summary,stopped}.json`.
+
 ## Historical corrected candidate: profile scaling
 
 Commit `7775cb310f9c85e00ae200694032e8550cbd0868`, EXE SHA-256 `7785e45c62e440ac18845cbb660c7742b761a40a1721a49f484d3e541f6240ae`. **96/96 noninteractive isolated launches PASS**: two warmups and 30 measured rotating rounds for each of three profiles. A separate nine-launch pilot passed first. Every exit checked current history presence, absence of unfinished `.tmp`/quarantine, and exact synthetic settings/history values through direct DPAPI/JSON rather than a recovering store Load. DPAPI ciphertext may change on ordinary exit; it is not a semantic equality criterion.
