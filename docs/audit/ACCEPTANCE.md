@@ -4,7 +4,17 @@
 
 ## Подтверждённые результаты
 
-### Дополнительная проверка интерфейса после возобновления
+### Commit-bound сборка и GitHub — актуальное дополнение
+
+Исходники опубликованы в [AffPapa/neclipboard-win](https://github.com/AffPapa/neclipboard-win), commit `85730d8db3ba7d25107bcb7d929a3ebf885f321b`. [CI 38143080391](https://github.com/AffPapa/neclipboard-win/actions/runs/38143080391) SUCCESS: preflight 65 файлов, шесть отрицательных сценариев scanner, обе сборки 0/0, 32 группы тестов, self-contained publish, light/dark isolated smoke, лицензии.
+
+Финальный commit-bound EXE: SHA-256 `ad2dbfe85b235084047a84551e8106f5104a60c0836b507e7ea43ad49d30978f`, 173 098 041 байт, 0.2.0.0, NotSigned. Локальная сборка и CI совпали побайтно. Draft v0.2.0 загружен; четыре assets скачаны и проверены без изменений; скачанный EXE прошёл light/dark isolated smoke. **Это черновик, не публичный релиз и не завершённая desktop/upgrade приёмка.**
+
+В этом EXE визуально осмотрены тёмная пустая история, настройки и backup-секция. Диалог сохранения backup открылся; автоматизация имени файла не подтвердилась, поэтому операция отменена. Создание копии не считается PASS. Clipboard fixture повторно отказался до записи из-за неизвестного формата исходного буфера; text/PNG/files E2E остаётся PENDING. Пользовательские данные не очищались.
+
+Sites version 10 успешно опубликована, source `1ede2cbbd593454a03e681ecced666a9a8ba25aa`: ссылка на репозиторий и новые UX изменения кандидата; download пока отключён. Последующие сведения о неподключённом GitHub и старых hashes ниже — исторические, заменены этим дополнением.
+
+### Предыдущая проверка интерфейса после возобновления
 
 Текущий кандидат: SHA-256 `88a88dbec76e2c4c4f324bc88bdc6794568fc0b75327022fba6b90965ae9ee96`, 173 098 041 байт, версия 0.2.0.0, NotSigned. Повторные Release build 0/0, 32 verification group, self-contained publish, isolated light/dark smoke и лицензии PASS. Код UX изменился после предыдущего кандидата; прежние hashes ниже исторические.
 

@@ -2,6 +2,12 @@
 
 Measured 2026-10-11. These are process observations of intermediate self-contained builds, not a claim that desktop E2E or final release acceptance is complete.
 
+## Additional 601-second observation of the UX candidate
+
+Candidate SHA-256 `88a88dbec76e2c4c4f324bc88bdc6794568fc0b75327022fba6b90965ae9ee96`; isolated empty QA profile, not production clipboard/tray operation. Raw ignored evidence: `artifacts/idle-ux-9973cd64/{environment,idle-samples,idle-summary}.json`. 121 observations over 601.488 seconds completed, executable hash unchanged, no diagnostic file, zero profile files. Other workstation activity was not controlled.
+
+CPU consumed 1453.125 ms: 0.2416% of one logical processor / 0.01510% across 16 processors. Private Bytes first/last 92.47/97.55 MiB, range 86.53–100.62 MiB; maximum Working Set 135.85 MiB. Handles increased 602→668 (range 596–673); threads 14→12 (range 10–16). **This observation does not prove absence of leaks**, and the handle increase needs a longer controlled/repeated-interaction investigation. It does not qualify the later commit-bound `ad2dbf...` EXE's production idle or loaded-history behavior.
+
 ## Environment and files
 
 - Windows 11 Pro x64, build 26200 (`10.0.26200`).
