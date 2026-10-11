@@ -10,6 +10,26 @@ internal static class Program
     private static void Main(string[] arguments)
     {
         ApplicationConfiguration.Initialize();
+        if (arguments is ["--inspect-native-format-storage"])
+        {
+            InspectNativeFormatStorage();
+            return;
+        }
+        if (arguments is ["--inspect-clipboard-formats"])
+        {
+            InspectClipboardFormats();
+            return;
+        }
+        if (arguments is ["--snapshot-format-selftest"])
+        {
+            Environment.ExitCode = ClipboardSnapshotFormats.SelfTest();
+            return;
+        }
+        if (arguments is ["--inspect-known-format-types"])
+        {
+            InspectKnownFormatTypes();
+            return;
+        }
         if (arguments.Length != 1)
         {
             MessageBox.Show("Укажите одноразовую папку NeClipboardWin-QA-* внутри TEMP.", "NeClipboard Win — synthetic fixture");
@@ -21,6 +41,127 @@ internal static class Program
             throw new ArgumentException("The desktop fixture only accepts an isolated TEMP directory.");
         Directory.CreateDirectory(directory);
         Application.Run(new ReceiverWindow(directory));
+    }
+
+    private static void InspectClipboardFormats()
+    {
+        // Read metadata only: never request, copy, hash, persist, or change a clipboard value.
+        // JSON escaping prevents custom format names from emitting terminal control characters.
+        try
+        {
+            var formats = Clipboard.GetDataObject()?.GetFormats(autoConvert: false) ?? [];
+            foreach (var format in formats.Take(128))
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(format.Length <= 256 ? format : format[..256]));
+            if (formats.Length > 128) Console.WriteLine("FORMAT_LIST_TRUNCATED");
+        }
+        catch (ExternalException)
+        {
+            Console.Error.WriteLine("Clipboard format metadata is temporarily unavailable; no values were read or changed.");
+            Environment.ExitCode = 1;
+        }
+    }
+
+    private static void InspectKnownFormatTypes()
+    {
+        // Diagnostic schema is fixed: types and privacy-buffer lengths only, never values.
+        string[] known = ["Bitmap", "System.Drawing.Bitmap", "CanIncludeInClipboardHistory", "CanUploadToCloudClipboard"];
+        try
+        {
+            var current = Clipboard.GetDataObject();
+            var present = current?.GetFormats(autoConvert: false) ?? [];
+            foreach (var format in known.Where(format => present.Contains(format, StringComparer.Ordinal)))
+            {
+                try
+                {
+                    var value = current!.GetData(format, autoConvert: false);
+                    var type = value?.GetType().FullName;
+                    long? length = ClipboardSnapshotFormats.IsPrivacyFormat(format) ? value switch { byte[] bytes => bytes.Length, MemoryStream stream => stream.Length, _ => null } : null;
+                    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { Format = format, Type = type is { Length: > 256 } ? type[..256] : type, PrivacyBufferLength = length }));
+                }
+                catch (Exception exception) when (exception is ExternalException or NotSupportedException or InvalidOperationException)
+                {
+                    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { Format = format, ErrorType = exception.GetType().FullName }));
+                }
+            }
+        }
+        catch (ExternalException)
+        {
+            Console.Error.WriteLine("Clipboard type metadata is temporarily unavailable; no values were logged or changed.");
+            Environment.ExitCode = 1;
+        }
+    }
+
+    private static void InspectNativeFormatStorage()
+    {
+        if (!OpenClipboard(IntPtr.Zero))
+        {
+            Console.Error.WriteLine("Clipboard native metadata unavailable; clipboard unchanged.");
+            Environment.ExitCode = 1;
+            return;
+        }
+        try
+        {
+            // Handles are never printed or persisted; no dereference, clone, or clipboard write.
+            var bitmapAvailable = GetClipboardData(2) != IntPtr.Zero;
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { Format = "Bitmap", Materialized = bitmapAvailable }));
+            foreach (var format in new[] { "System.Drawing.Bitmap", "CanIncludeInClipboardHistory", "CanUploadToCloudClipboard" })
+            {
+                var handle = GetClipboardData(RegisterClipboardFormat(format));
+                var size = handle == IntPtr.Zero ? 0UL : GlobalSize(handle).ToUInt64();
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { Format = format, Materialized = handle != IntPtr.Zero, GlobalBytes = size <= 16 * 1024 * 1024 ? (ulong?)size : null, Exceeds16MiB = size > 16 * 1024 * 1024 }));
+            }
+        }
+        finally { CloseClipboard(); }
+    }
+
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenClipboard(IntPtr owner);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseClipboard();
+    [DllImport("user32.dll")] private static extern IntPtr GetClipboardData(uint format);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterClipboardFormat(string format);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern UIntPtr GlobalSize(IntPtr handle);
+}
+
+internal static class ClipboardSnapshotFormats
+{
+    private static readonly string[] PrivacyFormats = ["CanIncludeInClipboardHistory", "CanUploadToCloudClipboard", "ExcludeClipboardContentFromMonitorProcessing"];
+    private static readonly string[] SupportedFormats = [DataFormats.UnicodeText, DataFormats.Text, DataFormats.OemText, DataFormats.StringFormat,
+        DataFormats.Html, DataFormats.Rtf, DataFormats.CommaSeparatedValue, DataFormats.Bitmap,
+        DataFormats.Dib, DataFormats.FileDrop, DataFormats.Locale, "PNG", "Preferred DropEffect", "Performed DropEffect", "Paste Succeeded", "NeClipboardWin.SyntheticQa", "System.Drawing.Bitmap"];
+
+    internal static bool IsSupported(string format) => SupportedFormats.Contains(format, StringComparer.Ordinal) || PrivacyFormats.Contains(format, StringComparer.Ordinal);
+    internal static bool IsPrivacyFormat(string format) => PrivacyFormats.Contains(format, StringComparer.Ordinal);
+
+    internal static object? ClonePrivacyDword(object? value) => value switch
+    {
+        int integer => integer,
+        byte[] bytes when bytes.Length == 4 => bytes.ToArray(),
+        MemoryStream stream when stream.Length == 4 => new MemoryStream(stream.ToArray(), writable: false),
+        _ => null
+    };
+
+    internal static int SelfTest()
+    {
+        // Pure in-memory regression checks. No access to the system clipboard.
+        var passed = IsSupported("System.Drawing.Bitmap") && PrivacyFormats.All(IsSupported)
+            && !IsSupported("Unknown.Custom.Ole.Format") && !IsSupported("canincludeinclipboardhistory")
+            && !IsPrivacyFormat("System.Drawing.Bitmap")
+            && ClonePrivacyDword(0) is int zero && zero == 0
+            && ClonePrivacyDword(1) is int one && one == 1
+            && ClonePrivacyDword(unchecked((int)0xAABBCCDD)) is int arbitrary && arbitrary == unchecked((int)0xAABBCCDD)
+            && ClonePrivacyDword(new byte[3]) is null && ClonePrivacyDword(new byte[5]) is null
+            && ClonePrivacyDword("1") is null && ClonePrivacyDword(null) is null;
+        byte[] source = [0xDD, 0xCC, 0xBB, 0xAA];
+        var clone = ClonePrivacyDword(source) as byte[];
+        passed &= clone is not null && !ReferenceEquals(source, clone) && source.SequenceEqual(clone);
+        using var stream = new MemoryStream(source, writable: false);
+        stream.Position = 2;
+        using var streamClone = ClonePrivacyDword(stream) as MemoryStream;
+        passed &= streamClone is not null && !ReferenceEquals(stream, streamClone) && streamClone.ToArray().SequenceEqual(source) && stream.Position == 2;
+        using var shortStream = new MemoryStream(new byte[3]);
+        using var longStream = new MemoryStream(new byte[5]);
+        passed &= ClonePrivacyDword(shortStream) is null && ClonePrivacyDword(longStream) is null;
+        Console.WriteLine(passed ? "PASS strict clipboard snapshot format regression (no system clipboard access)" : "FAIL strict clipboard snapshot format regression");
+        return passed ? 0 : 1;
     }
 }
 
@@ -106,10 +247,7 @@ internal sealed class ReceiverWindow : Form
         var initialSequence = GetClipboardSequenceNumber();
         var current = Clipboard.GetDataObject();
         var formats = current?.GetFormats(autoConvert: false) ?? [];
-        string[] supported = [DataFormats.UnicodeText, DataFormats.Text, DataFormats.OemText, DataFormats.StringFormat,
-            DataFormats.Html, DataFormats.Rtf, DataFormats.CommaSeparatedValue, DataFormats.Bitmap,
-            DataFormats.Dib, DataFormats.FileDrop, DataFormats.Locale, "PNG", "Preferred DropEffect", "Performed DropEffect", "Paste Succeeded", MarkerFormat];
-        if (formats.Any(format => !supported.Contains(format, StringComparer.Ordinal)))
+        if (formats.Any(format => !ClipboardSnapshotFormats.IsSupported(format)))
         {
             _status.Text = "Тест не начат: исходный буфер содержит формат, который нельзя безопасно восстановить. Буфер не изменён.";
             Record("clipboard-snapshot-supported", false);
@@ -120,7 +258,7 @@ internal sealed class ReceiverWindow : Form
         foreach (var format in formats)
         {
             var value = current!.GetData(format, autoConvert: false);
-            object? copy = value switch
+            object? copy = ClipboardSnapshotFormats.IsPrivacyFormat(format) ? ClipboardSnapshotFormats.ClonePrivacyDword(value) : value switch
             {
                 string text when text.Length <= 8 * 1024 * 1024 => text,
                 string[] paths when paths.Length <= 1_000 && paths.Sum(path => (long)path.Length) <= 1_000_000 => paths.ToArray(),
