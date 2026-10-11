@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     private long _historyEpoch;
     private Task<bool>? _historySaveTask;
     private bool _historySaveRequested;
+    private bool _compactPalette = true;
     private bool _imageCapturePending;
     private (string Source, uint Sequence)? _latestImageCapture;
     private int _registeredHotkeyId = MainHotkeyId;
@@ -114,6 +115,7 @@ public partial class MainWindow : Window
         RefreshHistory();
         if (!_isolatedQaMode || _desktopQaMode) CreateTrayIcon();
         UpdateActionState();
+        SetCompactPalette(true);
     }
 
     private static DateTime SortKey(ClipboardEntry entry) => entry.IsPinned ? DateTime.MaxValue : entry.LastUsedUtc;
@@ -749,7 +751,11 @@ public partial class MainWindow : Window
         PasteButton.Content = actionName;
         PasteSnippetButton.Content = actionName;
         var enterAction = _settings.AutoPasteAfterSelection ? "вставить" : "скопировать";
-        ShortcutHints.Text = MainTabs.SelectedIndex switch
+        ShortcutHints.Text = _compactPalette
+            ? MainTabs.SelectedIndex == 1
+                ? $"Enter — {enterAction} · Esc — закрыть"
+                : $"↑ ↓ — выбрать · Enter — {enterAction} · Esc — закрыть"
+            : MainTabs.SelectedIndex switch
         {
             1 => $"Esc — скрыть · Enter — {enterAction} выбранную заготовку",
             2 => "Esc — скрыть · Настройки применяются кнопкой «Сохранить»",
@@ -1102,18 +1108,18 @@ public partial class MainWindow : Window
         _pasteGeneration++;
         var foreground = NativeMethods.GetForegroundWindow();
         if (foreground != _windowSource?.Handle) _previousForegroundWindow = foreground;
+        SetCompactPalette(true);
         MainTabs.SelectedIndex = 0;
+        SearchBox.Clear();
         var screen = Forms.Screen.FromPoint(Forms.Cursor.Position).WorkingArea;
         var transform = _windowSource?.CompositionTarget?.TransformFromDevice ?? System.Windows.Media.Matrix.Identity;
         var topLeft = transform.Transform(new System.Windows.Point(screen.Left, screen.Top));
         var bottomRight = transform.Transform(new System.Windows.Point(screen.Right, screen.Bottom));
-        if (Left < topLeft.X || Top < topLeft.Y || Left + Width > bottomRight.X || Top + Height > bottomRight.Y)
-        {
-            Left = topLeft.X + Math.Max(0, (bottomRight.X - topLeft.X - Width) / 2);
-            Top = topLeft.Y + Math.Max(0, (bottomRight.Y - topLeft.Y - Height) / 2);
-        }
         Show();
         WindowState = WindowState.Normal;
+        var cursor = transform.Transform(new System.Windows.Point(Forms.Cursor.Position.X, Forms.Cursor.Position.Y));
+        Left = Math.Clamp(cursor.X + 12, topLeft.X, Math.Max(topLeft.X, bottomRight.X - Width));
+        Top = Math.Clamp(cursor.Y + 12, topLeft.Y, Math.Max(topLeft.Y, bottomRight.Y - Height));
         Activate();
         Topmost = true;
         Topmost = false;
@@ -1121,6 +1127,38 @@ public partial class MainWindow : Window
     }
 
     internal void ShowPaletteFromActivation() => ShowPalette();
+
+    private void ModeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_compactPalette)
+        {
+            SetCompactPalette(false);
+            MainTabs.SelectedIndex = 2;
+            SearchBox.Clear();
+            Activate();
+        }
+        else
+        {
+            MainTabs.SelectedIndex = 0;
+            SetCompactPalette(true);
+            SearchBox.Focus();
+        }
+    }
+
+    private void SetCompactPalette(bool compact)
+    {
+        _compactPalette = compact;
+        SettingsTab.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        HotkeyBadgeBorder.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        HistoryFilterBox.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SearchGrid.ColumnDefinitions[2].Width = compact ? new GridLength(0) : new GridLength(142);
+        Width = compact ? 460 : 780;
+        Height = compact ? 500 : 680;
+        MinWidth = compact ? 420 : 560;
+        MinHeight = compact ? 400 : 460;
+        ModeButton.Content = compact ? "Настройки" : "Компактно";
+        ModeButton.ToolTip = compact ? "Открыть полное окно" : "Вернуться к компактному списку";
+    }
 
     private void HideButton_Click(object sender, RoutedEventArgs e) => Hide();
 
@@ -1151,7 +1189,8 @@ public partial class MainWindow : Window
         else if (e.Key == System.Windows.Input.Key.Tab && (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0)
         {
             var direction = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) != 0 ? -1 : 1;
-            MainTabs.SelectedIndex = (MainTabs.SelectedIndex + MainTabs.Items.Count + direction) % MainTabs.Items.Count;
+            var tabCount = _compactPalette ? 2 : MainTabs.Items.Count;
+            MainTabs.SelectedIndex = (MainTabs.SelectedIndex + tabCount + direction) % tabCount;
             if (MainTabs.ItemContainerGenerator.ContainerFromIndex(MainTabs.SelectedIndex) is TabItem tab) tab.Focus();
             e.Handled = true;
         }
