@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using MediaFontFamily = System.Windows.Media.FontFamily;
 using WpfControls = System.Windows.Controls;
 
@@ -129,6 +130,9 @@ public sealed class SnippetEditorWindow : Window
     private void ShowError(string message)
     {
         _errorText.Text = message;
+        AutomationProperties.SetName(_errorText, message);
         _errorText.Visibility = Visibility.Visible;
+        FrameworkElementAutomationPeer.CreatePeerForElement(_errorText)?
+            .RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
 }

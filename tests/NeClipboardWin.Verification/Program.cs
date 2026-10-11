@@ -70,6 +70,7 @@ try
     Run("clipboard privacy markers and replay policy", TestClipboardPrivacy);
     Run("locked storage fails closed without losing data", () => TestLockedStorage(testRoot));
     Run("theme text contrast contracts", TestThemeTextContrast);
+    Run("snippet actionable error accessibility", TestSnippetErrorAccessibility);
     Console.WriteLine("All NeClipboard Win verification checks passed.");
 }
 finally
@@ -81,6 +82,51 @@ static void Run(string name, Action check)
 {
     check();
     Console.WriteLine($"PASS  {name}");
+}
+
+static void TestSnippetErrorAccessibility()
+{
+    // In-process WPF properties only: no Show, window handle, input or clipboard.
+    Exception? failure = null;
+    var thread = new Thread(() =>
+    {
+        try
+        {
+            var editor = new SnippetEditorWindow(new Snippet
+            {
+                Title = "Synthetic title", Content = "Synthetic Unicode 😀\r\nSecond line"
+            });
+            try
+            {
+                var error = (System.Windows.Controls.TextBlock)typeof(SnippetEditorWindow)
+                    .GetField("_errorText", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(editor)!;
+                var showError = typeof(SnippetEditorWindow)
+                    .GetMethod("ShowError", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                foreach (var message in new[] { "Укажите название заготовки.", "Добавьте текст заготовки." })
+                {
+                    showError.Invoke(editor, [message]);
+                    Expect(error.Text == message && error.Visibility == System.Windows.Visibility.Visible,
+                        "The actionable error must remain visible.");
+                    Expect(System.Windows.Automation.AutomationProperties.GetName(error) == message,
+                        "UIA must expose the actual error, not a generic label.");
+                    var peer = System.Windows.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(error);
+                    Expect(peer?.GetName() == message, "The automation peer must expose each updated error.");
+                    Expect(System.Windows.Automation.AutomationProperties.GetLiveSetting(error)
+                        == System.Windows.Automation.AutomationLiveSetting.Assertive,
+                        "Important validation messages must remain an assertive live region.");
+                }
+                Expect(editor.Result.Title == "Synthetic title"
+                    && editor.Result.Content == "Synthetic Unicode 😀\r\nSecond line",
+                    "Displaying errors must not lose entered data.");
+            }
+            finally { editor.Close(); }
+        }
+        catch (Exception exception) { failure = exception; }
+    });
+    thread.SetApartmentState(ApartmentState.STA);
+    thread.Start();
+    thread.Join();
+    if (failure is not null) throw new InvalidOperationException("Snippet error accessibility regression failed.", failure);
 }
 
 static void TestThemeTextContrast()
