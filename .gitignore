@@ -1,0 +1,38 @@
+# Build and IDE output
+[Bb]in/
+[Oo]bj/
+.vs/
+.idea/
+TestResults/
+artifacts/
+# Internal execution prompt and checkpoint may contain workstation paths.
+/docs/MASTER-AUDIT-PROMPT.ru.md
+/docs/audit/STATUS.md
+
+# Per-user and local runtime data
+*.user
+*.suo
+*.userosscache
+*.rsuser
+*.dat
+*.dat.corrupt-*
+*.neclipboard-backup
+startup-error.log
+
+# Credentials, signing material and local configuration
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk
+*.kdbx
+appsettings.Local.json
+appsettings.Production.json
+
+# Operating system files
+Thumbs.db
+Desktop.ini
+.DS_Store

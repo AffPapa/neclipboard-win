@@ -1,0 +1,29 @@
+name: Предложение по удобству
+description: Описать конкретную задачу, которую программе стоит решать лучше.
+title: "[Идея] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        NeClipboard Win остаётся простым локальным инструментом без обязательного
+        аккаунта и облака. Опишите одну повседневную задачу. Не размещайте в примерах
+        личное содержимое буфера, пароли или токены. Предложение не означает обещания реализации.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Что сейчас неудобно
+      description: Какая задача требует лишних действий и как часто она возникает?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Как должно работать
+      description: Короткий сценарий с выдуманными данными. Можно приложить обезличенный набросок.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Как решаете задачу сейчас
+      description: Поможет понять пользу и сохранить интерфейс простым.

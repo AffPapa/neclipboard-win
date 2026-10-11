@@ -1,0 +1,36 @@
+name: Verify NeClipboard Win
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          global-json-file: global.json
+      - name: Public-repository preflight
+        shell: pwsh
+        run: ./scripts/public-preflight.ps1
+      - name: Regression-test public preflight
+        shell: pwsh
+        run: ./scripts/release-test-preflight.ps1
+      - name: Build, verify and smoke-test final portable executable
+        shell: pwsh
+        run: ./scripts/release-build.ps1 -SourceCommit $env:GITHUB_SHA

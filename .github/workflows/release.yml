@@ -1,0 +1,76 @@
+name: Prepare draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag (vX.Y.Z); release notes must exist in docs/releases/vX.Y.Z.md
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neclipboard-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - name: Check out the exact requested commit before reading project files
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          global-json-file: global.json
+      - name: Check exact public source and scanner regression cases
+        shell: pwsh
+        run: |
+          ./scripts/public-preflight.ps1
+          ./scripts/release-test-preflight.ps1
+      - name: Build and verify release assets
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/release-build.ps1 -Tag $env:RELEASE_TAG -SourceCommit $env:GITHUB_SHA -RequireReleaseNotes
+      - name: Preserve tested files without rebuilding
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            artifacts/release/NeClipboardWin-win-x64.exe
+            artifacts/release/NeClipboardWin-win-x64.exe.sha256
+            artifacts/release/release-manifest.json
+            artifacts/release/NeClipboardWin-LICENSES.txt
+            artifacts/release/RELEASE-NOTES.md
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: release-${{ github.sha }}
+          path: artifacts/release
+      - name: Create and verify a draft; do not change Latest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/release-github.ps1 -Mode Draft -Tag $env:RELEASE_TAG -Repository $env:GITHUB_REPOSITORY -ExpectedCommit $env:GITHUB_SHA

@@ -1,0 +1,39 @@
+name: Publish verified draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing draft tag, vX.Y.Z
+        required: true
+        type: string
+      verified_sha256:
+        description: SHA-256 of the exact draft EXE after desktop and upgrade acceptance
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neclipboard-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-2025
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Verify draft, publish it and validate the anonymous download
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          VERIFIED_SHA256: ${{ inputs.verified_sha256 }}
+        run: ./scripts/release-github.ps1 -Mode Publish -Tag $env:RELEASE_TAG -Repository $env:GITHUB_REPOSITORY -VerifiedSha256 $env:VERIFIED_SHA256

@@ -1,0 +1,63 @@
+name: Ошибка в программе
+description: Сообщить о воспроизводимой проблеме NeClipboard Win.
+title: "[Ошибка] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Эта заявка будет публичной. Не прикладывайте историю буфера, резервные копии,
+        settings.dat, history.dat, пароли, токены или личные пути. Скриншоты и журналы
+        сначала проверьте и обезличьте. Для уязвимости следуйте SECURITY.md,
+        а не размещайте чувствительные подробности в публичной заявке.
+  - type: input
+    id: version
+    attributes:
+      label: Версия NeClipboard Win
+      description: Указана в настройках программы. Уточните, если это самостоятельная сборка.
+      placeholder: "Например: 0.2.0, кандидат"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Версия Windows
+      description: Достаточно версии и сборки. Не нужны имя компьютера и имя пользователя.
+      placeholder: "Windows 11, версия и сборка"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Как повторить
+      description: Используйте выдуманный текст и тестовые файлы, а не личное содержимое буфера.
+      placeholder: |
+        1. Скопировать тестовый текст «пример».
+        2. Открыть историю...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Что произошло
+      description: Опишите наблюдаемый результат и повторяемость. Текст ошибки — только без личных данных.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Какого результата ожидали
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Дополнительные условия
+      description: При необходимости — тема, масштаб экрана, приложение-получатель, ручная или автоматическая вставка. Полные системные отчёты не нужны.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Перед отправкой
+      options:
+        - label: Я проверил текст и вложения — в них нет личного содержимого буфера, паролей, токенов или резервных копий.
+          required: true
