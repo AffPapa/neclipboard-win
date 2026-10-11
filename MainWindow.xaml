@@ -144,6 +144,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Border x:Name="HotkeyBadgeBorder" Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}" BorderThickness="1" Padding="11,7" CornerRadius="8" Margin="0,0,7,0"><TextBlock x:Name="HotkeyBadge" Text="Ctrl + Shift + V" Foreground="{DynamicResource AccentBrush}" FontSize="12" FontWeight="SemiBold" /></Border>
                 <Button x:Name="ModeButton" Content="Настройки" Click="ModeButton_Click" ToolTip="Открыть полное окно" />
+                <Button x:Name="CompactClearButton" Content="Очистить" Style="{StaticResource DangerButton}" Click="ClearButton_Click" Visibility="Collapsed" ToolTip="Очистить историю буфера" />
                 <Button x:Name="HideButton" Content="В трей" Click="HideButton_Click" />
             </StackPanel>
         </Grid>
