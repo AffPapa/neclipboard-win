@@ -1154,21 +1154,25 @@ public partial class MainWindow : Window
     private void SetCompactPalette(bool compact)
     {
         _compactPalette = compact;
+        BrandPanel.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SettingsTab.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HotkeyBadgeBorder.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         CaptureStateText.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HideButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         CompactClearButton.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        StatusTextBlock.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HistoryFilterBox.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SearchGrid.ColumnDefinitions[2].Width = compact ? new GridLength(0) : new GridLength(142);
-        MainLayoutGrid.Margin = compact ? new Thickness(12) : new Thickness(22);
-        HeaderPanel.Margin = compact ? new Thickness(0, 0, 0, 10) : new Thickness(0, 0, 0, 18);
-        ContentBorder.Margin = compact ? new Thickness(0, 8, 0, 6) : new Thickness(0, 14, 0, 11);
+        MainTabs.Padding = compact ? new Thickness(8, 4, 8, 3) : new Thickness(10, 8, 10, 8);
+        HistoryActions.Margin = compact ? new Thickness(0, 3, 0, 0) : new Thickness(0, 10, 0, 0);
+        MainLayoutGrid.Margin = compact ? new Thickness(10) : new Thickness(22);
+        HeaderPanel.Margin = compact ? new Thickness(0, 0, 0, 7) : new Thickness(0, 0, 0, 18);
+        ContentBorder.Margin = compact ? new Thickness(0, 6, 0, 4) : new Thickness(0, 14, 0, 11);
         PauseButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
-        Width = compact ? 440 : 780;
-        Height = compact ? 420 : 680;
-        MinWidth = compact ? 400 : 560;
-        MinHeight = compact ? 370 : 460;
+        Width = compact ? 420 : 780;
+        Height = compact ? 380 : 680;
+        MinWidth = compact ? 380 : 560;
+        MinHeight = compact ? 340 : 460;
         ModeButton.Content = compact ? "Настройки" : "Компактно";
         ModeButton.ToolTip = compact ? "Открыть полное окно" : "Вернуться к компактному списку";
         UpdateActionState();
@@ -1193,6 +1197,7 @@ public partial class MainWindow : Window
         if (HotkeyTextBox.IsKeyboardFocusWithin) return;
         if (e.Key == System.Windows.Input.Key.Escape)
         {
+            if (HistoryFilterBox.IsDropDownOpen) return;
             if (MainTabs.SelectedIndex == 0 && !string.IsNullOrWhiteSpace(SearchBox.Text)) SearchBox.Clear();
             else Hide();
             e.Handled = true;

@@ -66,7 +66,7 @@ public sealed class SnippetEditorWindow : Window
         grid.Children.Add(titleLabel);
         WpfControls.Grid.SetRow(_titleBox, 1);
         grid.Children.Add(_titleBox);
-        var label = new WpfControls.TextBlock { Text = "Текст сниппета", FontSize = 12, Margin = new Thickness(0, 14, 0, 5) };
+        var label = new WpfControls.TextBlock { Text = "Текст сниппета", FontSize = 12, Margin = new Thickness(0, 12, 0, 5) };
         ThemeManager.Bind(label, WpfControls.TextBlock.ForegroundProperty, "MutedBrush");
         WpfControls.Grid.SetRow(label, 2);
         grid.Children.Add(label);
