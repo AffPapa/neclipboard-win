@@ -116,6 +116,7 @@ public partial class MainWindow : Window
         if (!_isolatedQaMode || _desktopQaMode) CreateTrayIcon();
         UpdateActionState();
         SetCompactPalette(true);
+        Loaded += MainWindow_Loaded;
     }
 
     private static DateTime SortKey(ClipboardEntry entry) => entry.IsPinned ? DateTime.MaxValue : entry.LastUsedUtc;
@@ -631,8 +632,44 @@ public partial class MainWindow : Window
     {
         if (e.Source != MainTabs) return;
         SearchPanel.Visibility = !_compactPalette && MainTabs.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (_compactPalette && IsLoaded)
+            FocusActiveList();
         if (ShortcutHints is not null) UpdateActionState();
     }
+
+    private void FocusActiveList()
+    {
+        if (!IsLoaded) return;
+        Dispatcher.BeginInvoke(new Action(FocusActiveListCore), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void FocusActiveListCore()
+    {
+        if (MainTabs.SelectedIndex == 0)
+        {
+            if (HistoryList.Items.Count > 0 && HistoryList.SelectedIndex < 0) HistoryList.SelectedIndex = 0;
+            FocusSelectedListItem(HistoryList);
+        }
+        else if (MainTabs.SelectedIndex == 1)
+        {
+            if (SnippetList.Items.Count > 0 && SnippetList.SelectedIndex < 0) SnippetList.SelectedIndex = 0;
+            FocusSelectedListItem(SnippetList);
+        }
+    }
+
+    private static void FocusSelectedListItem(System.Windows.Controls.ListBox list)
+    {
+        if (list.SelectedIndex >= 0 && list.ItemContainerGenerator.ContainerFromIndex(list.SelectedIndex) is ListBoxItem item)
+            item.Focus();
+        else
+            list.Focus();
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_compactPalette) FocusActiveList();
+    }
+
     private void HistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateActionState();
     private void SnippetList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateActionState();
 
@@ -814,8 +851,11 @@ public partial class MainWindow : Window
         var editor = new SnippetEditorWindow(validate: ValidateSnippetChange) { Owner = this };
         if (editor.ShowDialog() != true) return;
         var updated = _settings.DeepClone();
-        updated.Snippets.Add(editor.Result.DeepClone());
-        await SaveSettingsAsync(updated, "Сниппет добавлен.");
+        var added = editor.Result.DeepClone();
+        updated.Snippets.Add(added);
+        if (!await SaveSettingsAsync(updated, "Сниппет добавлен.")) return;
+        SnippetList.SelectedItem = _settings.Snippets.FirstOrDefault(item => item.Id == added.Id);
+        FocusActiveList();
     }
 
     private async void EditSnippetButton_Click(object sender, RoutedEventArgs e)
@@ -829,16 +869,20 @@ public partial class MainWindow : Window
         edited.Title = editor.Result.Title;
         edited.Content = editor.Result.Content;
         edited.UpdatedUtc = DateTime.UtcNow;
-        await SaveSettingsAsync(updated, "Сниппет сохранён.");
+        if (!await SaveSettingsAsync(updated, "Сниппет сохранён.")) return;
+        FocusActiveList();
     }
 
     private async void DeleteSnippetButton_Click(object sender, RoutedEventArgs e)
     {
         if (_storageBusy) return;
         if (SnippetList.SelectedItem is not Snippet selected) return;
+        var previousIndex = SnippetList.SelectedIndex;
         var updated = _settings.DeepClone();
         updated.Snippets.RemoveAll(item => item.Id == selected.Id);
-        await SaveSettingsAsync(updated, "Сниппет удалён.");
+        if (!await SaveSettingsAsync(updated, "Сниппет удалён.")) return;
+        if (_settings.Snippets.Count > 0) SnippetList.SelectedIndex = Math.Min(previousIndex, _settings.Snippets.Count - 1);
+        FocusActiveList();
     }
 
     private string? ValidateSnippetChange(Snippet proposed)
@@ -1123,7 +1167,7 @@ public partial class MainWindow : Window
         Activate();
         Topmost = true;
         Topmost = false;
-        SearchBox.Focus();
+        FocusActiveList();
     }
 
     internal void ShowPaletteFromActivation() => ShowPalette();
@@ -1147,7 +1191,7 @@ public partial class MainWindow : Window
         {
             MainTabs.SelectedIndex = 0;
             SetCompactPalette(true);
-            SearchBox.Focus();
+            FocusActiveList();
         }
     }
 
@@ -1223,7 +1267,8 @@ public partial class MainWindow : Window
             var direction = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) != 0 ? -1 : 1;
             var tabCount = _compactPalette ? 2 : MainTabs.Items.Count;
             MainTabs.SelectedIndex = (MainTabs.SelectedIndex + tabCount + direction) % tabCount;
-            if (MainTabs.ItemContainerGenerator.ContainerFromIndex(MainTabs.SelectedIndex) is TabItem tab) tab.Focus();
+            if (_compactPalette) FocusActiveList();
+            else if (MainTabs.ItemContainerGenerator.ContainerFromIndex(MainTabs.SelectedIndex) is TabItem tab) tab.Focus();
             e.Handled = true;
         }
         else if (e.Key == System.Windows.Input.Key.Delete && HistoryList.IsKeyboardFocusWithin)
