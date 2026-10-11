@@ -22,7 +22,28 @@ foreach ($theme in $Themes) {
         if ($process.ExitCode -ne 0) {
             throw "Isolated NeClipboard QA process exited with code $($process.ExitCode)."
         }
-        Write-Output "PASS  isolated $theme startup: process $($process.Id) exited cleanly without desktop integrations."
+        # An exit code of zero alone misses shutdown while the asynchronous
+        # history writer is still inside File.Replace. Check the final document
+        # directly, without a store Load call that might silently recover it.
+        $historyPath = Join-Path $qaDirectory 'history.dat'
+        if (-not (Test-Path -LiteralPath $historyPath -PathType Leaf)) {
+            throw 'Isolated exit did not finish writing history.dat.'
+        }
+        if (@(Get-ChildItem -LiteralPath $qaDirectory -Filter '*.tmp' -File).Count -ne 0) {
+            throw 'Isolated exit left an unfinished temporary storage file.'
+        }
+        $plainHistory = [Security.Cryptography.ProtectedData]::Unprotect(
+            [IO.File]::ReadAllBytes($historyPath), $null,
+            [Security.Cryptography.DataProtectionScope]::CurrentUser)
+        try {
+            $history = [Text.Encoding]::UTF8.GetString($plainHistory) | ConvertFrom-Json
+            if ($history.Format -ne 'NeClipboardWin.History' -or $history.SchemaVersion -ne 1 -or
+                $null -eq $history.Entries -or @($history.Entries).Count -ne 0) {
+                throw 'Isolated exit wrote an unexpected history document.'
+            }
+        }
+        finally { [Array]::Clear($plainHistory, 0, $plainHistory.Length) }
+        Write-Output "PASS  isolated $theme startup: process $($process.Id) exited after committing valid history without desktop integrations."
     }
     finally {
         if ($null -ne $process -and -not $process.HasExited) {

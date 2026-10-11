@@ -150,7 +150,10 @@ public partial class App : System.Windows.Application
         timer.Tick += (_, _) =>
         {
             timer.Stop();
-            Shutdown();
+            // Application.Shutdown does not await the asynchronous Closing
+            // handler. Let the window's normal exit path finish its queued
+            // history writes before it approves shutdown instead.
+            MainWindow?.Close();
         };
         timer.Start();
     }

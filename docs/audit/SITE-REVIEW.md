@@ -3,14 +3,15 @@
 The existing public Site was updated, not replaced with another project.
 
 - URL: https://neclipboard-win.mail782861.chatgpt.site
-- Saved Site version: 9 (not the application version).
-- Source commit: `56bbf275f286f4719b400c1ffa69712f5b105691`.
+- Saved Site version: 10 (not the application version).
+- Source commit: `1ede2cbbd593454a03e681ecced666a9a8ba25aa`.
 - Deployment status returned by Sites: `succeeded`.
-- Application status on the page: **0.2.0 candidate, no public binary download yet**. No invented GitHub repository or download URL.
+- Application status on the page: **0.2.0 candidate, no public binary download yet**. GitHub link points to the verified public repository `AffPapa/neclipboard-win`; no public asset URL is claimed.
 
 ## Checks performed
 
 - Production build and TypeScript `--noEmit`: PASS.
+- Version 10 was reloaded in the browser: repository link confirmed in the DOM and light desktop screenshot inspected. Local evidence: `outputs/neclipboard-site-v10-proof.png` in the parent workspace. Version 9 mobile/FAQ checks below were not repeated on version 10.
 - Home page HTTP 200, desktop screenshot and 390×844 mobile screenshots: PASS for readable layout without observed overlap.
 - Changelog navigation and expanded .NET FAQ: PASS through browser interaction.
 - Home/changelog prerender: PASS. Removed unused starter API endpoint.
