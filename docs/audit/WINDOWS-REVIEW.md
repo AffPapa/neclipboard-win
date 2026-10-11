@@ -2,6 +2,13 @@
 
 Reviewed 2026-10-11 against current Microsoft primary documentation and the 0.2.0 candidate source. This is an API/design review, not a claim that every Windows integration has passed desktop testing. See [ACCEPTANCE.md](ACCEPTANCE.md) for test gates.
 
+## Source refresh — 2026-10-12
+
+- Microsoft Learn currently lists .NET 10 as LTS through November 2028, and .NET 8/.NET 9 through November 2026. The product remains on .NET 10 for support lifetime and updateability, not because runtime migration alone proves better speed. For a consumer app, self-contained deployment removes a runtime-install requirement but makes the publisher responsible for rebuilding/releasing runtime servicing updates. [Releases and support](https://learn.microsoft.com/dotnet/core/releases-and-support), [Microsoft lifecycle dates](https://learn.microsoft.com/en-ie/lifecycle/products/microsoft-net-and-net-core).
+- Current WPF deployment guidance still supports self-contained distribution for an app that should run without client runtime installation; it does not give portable bundles installer-style versioning, uninstall or rollback. This supports the current simple portable EXE, while leaving installer tradeoffs explicit. [Deploy a WPF app](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/app-development/deploying-a-wpf-application-wpf).
+- The DPI guidance stresses that system-DPI awareness can become blurry when moved between differently scaled displays; high-contrast mode is not a substitute for readable default contrast. Our manifest/resources must therefore be confirmed with actual mixed-DPI and High Contrast runs, not inferred from WPF or manifest declarations. [High-DPI desktop development](https://learn.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows), [accessible text requirements](https://learn.microsoft.com/en-us/windows/apps/design/accessibility/accessible-text-requirements).
+- Host check: Windows build 26200 x64; system runtimes are only .NET 8.0.31 and SDK is 8.0.425. The exact .NET 10 self-contained candidate remained up for the full 601.69-second isolated desktop-QA idle run. This shows it does not require an installed .NET 10 runtime; it does **not** prove behavior on a clean machine without any SDK/runtime. See `ACCEPTANCE.md` for measured counters and the bounded claim.
+
 ## Decisions, evidence and remaining verification
 
 | Area | Official contract and implementation decision | Cost / alternative | Verification boundary |

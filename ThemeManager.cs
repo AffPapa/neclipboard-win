@@ -22,6 +22,8 @@ internal static class ThemeManager
         ["MutedBrush"] = "#AAB8C2",
         ["SubtleTextBrush"] = "#99A9B5",
         ["AccentBrush"] = "#75E2D0",
+        ["AccentHoverBrush"] = "#5CC7B6",
+        ["AccentPressedBrush"] = "#41A998",
         ["AccentSoftBrush"] = "#193A35",
         ["AccentTextBrush"] = "#062D29",
         ["AccentBorderBrush"] = "#3B887D",
@@ -46,6 +48,8 @@ internal static class ThemeManager
         ["MutedBrush"] = "#586A78",
         ["SubtleTextBrush"] = "#586A78",
         ["AccentBrush"] = "#087770",
+        ["AccentHoverBrush"] = "#06655F",
+        ["AccentPressedBrush"] = "#054F4B",
         ["AccentSoftBrush"] = "#DDF5F0",
         ["AccentTextBrush"] = "#FFFFFF",
         ["AccentBorderBrush"] = "#68BDB2",
@@ -104,6 +108,8 @@ internal static class ThemeManager
         resources["MutedBrush"] = System.Windows.SystemColors.WindowTextBrush;
         resources["SubtleTextBrush"] = System.Windows.SystemColors.WindowTextBrush;
         resources["AccentBrush"] = System.Windows.SystemColors.HighlightBrush;
+        resources["AccentHoverBrush"] = System.Windows.SystemColors.HighlightBrush;
+        resources["AccentPressedBrush"] = System.Windows.SystemColors.HighlightBrush;
         resources["AccentSoftBrush"] = System.Windows.SystemColors.WindowBrush;
         resources["AccentTextBrush"] = System.Windows.SystemColors.HighlightTextBrush;
         resources["AccentBorderBrush"] = System.Windows.SystemColors.HighlightBrush;

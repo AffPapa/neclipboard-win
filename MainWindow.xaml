@@ -29,6 +29,8 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Root" Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Trigger>
                             <Trigger Property="IsPressed" Value="True"><Setter TargetName="Root" Property="Background" Value="{DynamicResource PressedBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Trigger>
+                            <MultiTrigger><MultiTrigger.Conditions><Condition Property="Tag" Value="Primary" /><Condition Property="IsMouseOver" Value="True" /></MultiTrigger.Conditions><Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentHoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" /></MultiTrigger>
+                            <MultiTrigger><MultiTrigger.Conditions><Condition Property="Tag" Value="Primary" /><Condition Property="IsPressed" Value="True" /></MultiTrigger.Conditions><Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentPressedBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" /></MultiTrigger>
                             <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter TargetName="Root" Property="BorderThickness" Value="2" /></Trigger>
                             <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Root" Property="Opacity" Value=".42" /></Trigger>
                         </ControlTemplate.Triggers>
@@ -37,9 +39,14 @@
             </Setter>
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Tag" Value="Primary" />
             <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" /></Trigger>
+                <Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" /></Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
@@ -144,7 +151,6 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Border x:Name="HotkeyBadgeBorder" Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}" BorderThickness="1" Padding="11,7" CornerRadius="8" Margin="0,0,7,0"><TextBlock x:Name="HotkeyBadge" Text="Ctrl + Shift + V" Foreground="{DynamicResource AccentBrush}" FontSize="12" FontWeight="SemiBold" /></Border>
                 <Button x:Name="ModeButton" Content="Настройки" Click="ModeButton_Click" ToolTip="Открыть полное окно" />
-                <Button x:Name="CompactClearButton" Content="Очистить" Style="{StaticResource DangerButton}" Click="ClearButton_Click" Visibility="Collapsed" ToolTip="Очистить историю буфера" />
                 <Button x:Name="HideButton" Content="В трей" Click="HideButton_Click" />
             </StackPanel>
         </Grid>
@@ -181,7 +187,7 @@
                     <Grid Margin="3,9,3,1"><Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                         <ListBox x:Name="SnippetList" AutomationProperties.Name="Заготовки текста" SelectionChanged="SnippetList_SelectionChanged" MouseDoubleClick="SnippetList_MouseDoubleClick"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="AutomationProperties.Name" Value="{Binding Title}" /></Style></ListBox.ItemContainerStyle><ListBox.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" /><TextBlock Text="{Binding Content}" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" MaxHeight="20" FontSize="11" Margin="0,3,0,0" /></StackPanel></DataTemplate></ListBox.ItemTemplate></ListBox>
                         <TextBlock Text="Заготовок текста для повторной вставки.&#x0a;Нажмите «Добавить», чтобы создать первую." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="340" IsHitTestVisible="False"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Items.Count, ElementName=SnippetList}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
-                        <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,10,0,0"><Button Content="Добавить" Click="AddSnippetButton_Click" /><Button x:Name="EditSnippetButton" Content="Изменить" Click="EditSnippetButton_Click" /><Button x:Name="DeleteSnippetButton" Content="Удалить" Style="{StaticResource DangerButton}" Click="DeleteSnippetButton_Click" /><Button x:Name="PasteSnippetButton" Content="Скопировать" Style="{StaticResource PrimaryButton}" Click="PasteSnippetButton_Click" /></WrapPanel>
+                        <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,10,0,0"><Button x:Name="AddSnippetButton" Content="Добавить" Click="AddSnippetButton_Click" /><Button x:Name="EditSnippetButton" Content="Изменить" Click="EditSnippetButton_Click" /><Button x:Name="DeleteSnippetButton" Content="Удалить" Style="{StaticResource DangerButton}" Click="DeleteSnippetButton_Click" /><Button x:Name="PasteSnippetButton" Content="Скопировать" Style="{StaticResource PrimaryButton}" Click="PasteSnippetButton_Click" /></WrapPanel>
                     </Grid>
                 </TabItem>
                 <TabItem x:Name="SettingsTab" Header="Настройки">

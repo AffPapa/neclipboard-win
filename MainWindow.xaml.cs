@@ -1204,7 +1204,11 @@ public partial class MainWindow : Window
         HotkeyBadgeBorder.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         CaptureStateText.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HideButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
-        CompactClearButton.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        PinButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        DeleteButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        AddSnippetButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        EditSnippetButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        DeleteSnippetButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         StatusTextBlock.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HistoryFilterBox.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SearchGrid.ColumnDefinitions[2].Width = compact ? new GridLength(0) : new GridLength(142);
@@ -1214,10 +1218,10 @@ public partial class MainWindow : Window
         HeaderPanel.Margin = compact ? new Thickness(0, 0, 0, 7) : new Thickness(0, 0, 0, 18);
         ContentBorder.Margin = compact ? new Thickness(0, 6, 0, 4) : new Thickness(0, 14, 0, 11);
         PauseButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
-        Width = compact ? 420 : 780;
-        Height = compact ? 380 : 680;
-        MinWidth = compact ? 380 : 560;
-        MinHeight = compact ? 340 : 460;
+        Width = compact ? 380 : 780;
+        Height = compact ? 350 : 680;
+        MinWidth = compact ? 340 : 560;
+        MinHeight = compact ? 300 : 460;
         ModeButton.Content = compact ? "Настройки" : "Компактно";
         ModeButton.ToolTip = compact ? "Открыть полное окно" : "Вернуться к компактному списку";
         UpdateActionState();

@@ -153,6 +153,13 @@ static void TestThemeTextContrast()
 {
     // Static palette validation: no Window, clipboard, registry changes or UI input.
     // Rendering, disabled alpha and the user's high-contrast colors need separate QA.
+    var projectRoot = FindProjectRoot();
+    var buttonTemplate = File.ReadAllText(Path.Combine(projectRoot, "MainWindow.xaml"), Encoding.UTF8);
+    Expect(buttonTemplate.Contains("<Setter Property=\"Tag\" Value=\"Primary\" />", StringComparison.Ordinal)
+        && buttonTemplate.Contains("<Condition Property=\"Tag\" Value=\"Primary\" />", StringComparison.Ordinal)
+        && buttonTemplate.Contains("Value=\"{DynamicResource AccentHoverBrush}\"", StringComparison.Ordinal)
+        && buttonTemplate.Contains("Value=\"{DynamicResource AccentPressedBrush}\"", StringComparison.Ordinal),
+        "Primary button template hover/pressed states must use contrast-tested accent brushes.");
     var palettes = new[] { "LightPalette", "DarkPalette" }.Select(name =>
         (Name: name, Colors: (IReadOnlyDictionary<string, string>)typeof(ThemeManager)
             .GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!)).ToArray();
@@ -163,7 +170,8 @@ static void TestThemeTextContrast()
         foreach (var foreground in new[] { "TextBrush", "MutedBrush", "SubtleTextBrush" })
             foreach (var background in new[] { "AppBackgroundBrush", "SurfaceBrush", "SurfaceRaisedBrush", "SurfaceMutedBrush", "HoverBrush", "SelectionBrush" })
                 pairs.Add((foreground, background));
-        pairs.AddRange([("AccentTextBrush", "AccentBrush"), ("AccentBrush", "AccentSoftBrush"),
+        pairs.AddRange([("AccentTextBrush", "AccentBrush"), ("AccentTextBrush", "AccentHoverBrush"),
+            ("AccentTextBrush", "AccentPressedBrush"), ("AccentBrush", "AccentSoftBrush"),
             ("TextBrush", "PressedBrush"), ("DangerBrush", "SurfaceRaisedBrush"),
             ("PinnedBrush", "SelectionBrush"), ("PinnedBrush", "HoverBrush")]);
         foreach (var (foreground, background) in pairs)
@@ -185,6 +193,13 @@ static void TestThemeTextContrast()
         return .2126 * Linear(Convert.ToByte(color.Substring(1, 2), 16))
             + .7152 * Linear(Convert.ToByte(color.Substring(3, 2), 16))
             + .0722 * Linear(Convert.ToByte(color.Substring(5, 2), 16));
+    }
+
+    static string FindProjectRoot()
+    {
+        for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "NeClipboardWin.csproj"))) return directory.FullName;
+        throw new DirectoryNotFoundException("Could not locate NeClipboardWin project root for XAML contract test.");
     }
 }
 
