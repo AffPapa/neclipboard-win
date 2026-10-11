@@ -64,6 +64,7 @@ try
     Run("restore abrupt process termination", () => TestRestoreProcessCrash(testRoot));
     Run("clear never resurrects previous history", () => TestClear(testRoot));
     Run("native INPUT structure layout", TestNativeInputLayout);
+    Run("palette placement remains inside work area", TestPalettePlacement);
     Run("legacy encrypted upgrade and repeat load", () => TestEncryptedLegacyUpgrade(testRoot));
     Run("JSON depth and preallocation string bounds", TestJsonPreflight);
     Run("invalid recovery journal preserves data", () => TestInvalidRecoveryJournal(testRoot));
@@ -622,6 +623,20 @@ static void TestNativeInputLayout()
 {
     var type = typeof(ClipboardEntry).Assembly.GetType("NeClipboardWin.NativeMethods+INPUT") ?? throw new InvalidOperationException("Native input type is missing.");
     Expect(Marshal.SizeOf(type) == (Environment.Is64BitProcess ? 40 : 28), "Win32 INPUT must include the complete native union with platform alignment.");
+}
+
+static void TestPalettePlacement()
+{
+    Expect(PalettePlacement.ClampOrigin(-30, 0, 1920, 460) == 0,
+        "The palette must not cross the work area's left edge.");
+    Expect(PalettePlacement.ClampOrigin(1800, 0, 1920, 460) == 1460,
+        "An expanded palette must remain fully visible at the right edge.");
+    Expect(PalettePlacement.ClampOrigin(-1800, -1920, 1920, 460) == -1800,
+        "Negative-coordinate monitors must retain valid origins.");
+    Expect(PalettePlacement.ClampOrigin(100, 0, 300, 460) == 0,
+        "If the work area is smaller than the window, anchor to its start rather than throwing.");
+    Expect(PalettePlacement.ClampOrigin(double.NaN, 10, 100, 30) == 10,
+        "Invalid requested coordinates must fall back to the work-area origin.");
 }
 
 static void TestEncryptedLegacyUpgrade(string root)

@@ -181,7 +181,7 @@ public partial class MainWindow : Window
         }
         else if (message == NativeMethods.WmHotkey && wParam.ToInt32() == _registeredHotkeyId)
         {
-            ShowPalette();
+            TogglePaletteFromHotkey();
             handled = true;
         }
         return IntPtr.Zero;
@@ -1118,8 +1118,8 @@ public partial class MainWindow : Window
         Show();
         WindowState = WindowState.Normal;
         var cursor = transform.Transform(new System.Windows.Point(Forms.Cursor.Position.X, Forms.Cursor.Position.Y));
-        Left = Math.Clamp(cursor.X + 12, topLeft.X, Math.Max(topLeft.X, bottomRight.X - Width));
-        Top = Math.Clamp(cursor.Y + 12, topLeft.Y, Math.Max(topLeft.Y, bottomRight.Y - Height));
+        Left = PalettePlacement.ClampOrigin(cursor.X + 12, topLeft.X, bottomRight.X - topLeft.X, Width);
+        Top = PalettePlacement.ClampOrigin(cursor.Y + 12, topLeft.Y, bottomRight.Y - topLeft.Y, Height);
         Activate();
         Topmost = true;
         Topmost = false;
@@ -1127,6 +1127,12 @@ public partial class MainWindow : Window
     }
 
     internal void ShowPaletteFromActivation() => ShowPalette();
+
+    private void TogglePaletteFromHotkey()
+    {
+        if (_compactPalette && IsVisible && IsActive) Hide();
+        else ShowPalette();
+    }
 
     private void ModeButton_Click(object sender, RoutedEventArgs e)
     {
@@ -1150,14 +1156,33 @@ public partial class MainWindow : Window
         _compactPalette = compact;
         SettingsTab.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HotkeyBadgeBorder.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        CaptureStateText.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        HideButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HistoryFilterBox.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SearchGrid.ColumnDefinitions[2].Width = compact ? new GridLength(0) : new GridLength(142);
+        MainLayoutGrid.Margin = compact ? new Thickness(12) : new Thickness(22);
+        HeaderPanel.Margin = compact ? new Thickness(0, 0, 0, 10) : new Thickness(0, 0, 0, 18);
+        ContentBorder.Margin = compact ? new Thickness(0, 8, 0, 6) : new Thickness(0, 14, 0, 11);
+        PauseButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         Width = compact ? 460 : 780;
         Height = compact ? 500 : 680;
         MinWidth = compact ? 420 : 560;
         MinHeight = compact ? 400 : 460;
         ModeButton.Content = compact ? "Настройки" : "Компактно";
         ModeButton.ToolTip = compact ? "Открыть полное окно" : "Вернуться к компактному списку";
+        UpdateActionState();
+        if (IsVisible) KeepWindowInCurrentWorkArea();
+    }
+
+    private void KeepWindowInCurrentWorkArea()
+    {
+        if (_windowSource?.Handle is not { } hwnd || hwnd == IntPtr.Zero) return;
+        var workArea = Forms.Screen.FromHandle(hwnd).WorkingArea;
+        var transform = _windowSource.CompositionTarget?.TransformFromDevice ?? System.Windows.Media.Matrix.Identity;
+        var topLeft = transform.Transform(new System.Windows.Point(workArea.Left, workArea.Top));
+        var bottomRight = transform.Transform(new System.Windows.Point(workArea.Right, workArea.Bottom));
+        Left = PalettePlacement.ClampOrigin(Left, topLeft.X, bottomRight.X - topLeft.X, Width);
+        Top = PalettePlacement.ClampOrigin(Top, topLeft.Y, bottomRight.Y - topLeft.Y, Height);
     }
 
     private void HideButton_Click(object sender, RoutedEventArgs e) => Hide();

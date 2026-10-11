@@ -130,10 +130,10 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="22">
+    <Grid x:Name="MainLayoutGrid" Margin="12">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,18">
+        <Grid x:Name="HeaderPanel" Grid.Row="0" Margin="0,0,0,12">
             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal">
                 <Border Width="40" Height="40" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="11" Margin="0,0,12,0">
@@ -144,7 +144,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Border x:Name="HotkeyBadgeBorder" Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}" BorderThickness="1" Padding="11,7" CornerRadius="8" Margin="0,0,7,0"><TextBlock x:Name="HotkeyBadge" Text="Ctrl + Shift + V" Foreground="{DynamicResource AccentBrush}" FontSize="12" FontWeight="SemiBold" /></Border>
                 <Button x:Name="ModeButton" Content="Настройки" Click="ModeButton_Click" ToolTip="Открыть полное окно" />
-                <Button Content="В трей" Click="HideButton_Click" />
+                <Button x:Name="HideButton" Content="В трей" Click="HideButton_Click" />
             </StackPanel>
         </Grid>
 
@@ -159,7 +159,7 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="2" Margin="0,14,0,11" Background="{DynamicResource SurfaceMutedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="11">
+        <Border x:Name="ContentBorder" Grid.Row="2" Margin="0,8,0,6" Background="{DynamicResource SurfaceMutedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="11">
             <TabControl x:Name="MainTabs" KeyboardNavigation.TabNavigation="Once" Background="Transparent" BorderThickness="0" Padding="10,8" SelectionChanged="MainTabs_SelectionChanged">
                 <TabItem Header="История">
                     <Grid Margin="3,9,3,1"><Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
