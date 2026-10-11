@@ -630,7 +630,7 @@ public partial class MainWindow : Window
     private void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (e.Source != MainTabs) return;
-        SearchPanel.Visibility = MainTabs.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        SearchPanel.Visibility = !_compactPalette && MainTabs.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
         if (ShortcutHints is not null) UpdateActionState();
     }
     private void HistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateActionState();
@@ -1154,6 +1154,7 @@ public partial class MainWindow : Window
     private void SetCompactPalette(bool compact)
     {
         _compactPalette = compact;
+        SearchPanel.Visibility = !compact && MainTabs.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
         BrandPanel.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SettingsTab.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         HotkeyBadgeBorder.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
