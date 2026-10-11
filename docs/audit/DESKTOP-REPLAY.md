@@ -25,6 +25,12 @@ Ctrl+Alt+V was chosen in the fresh QA profile because a previous QA process reta
 
 Local ignored evidence: `desktop-fixture-results.log` in the run's isolated `NeClipboardWin-QA-desktop-*` TEMP profile, with fixed labels/timestamps/booleans only. The synthetic profile is retained for follow-up inspection, not uploaded.
 
+## Draft distribution check
+
+The existing UNPUBLISHED v0.2.0 draft was refreshed to the same e099 EXE and source28957d4, without rebuilding, signing, publishing or changing a tag. Remote draft state and exact four asset names were checked first; no public v0.2.0 tag existed. Only three changed assets were replaced by explicit names (EXE, checksum, manifest); the identical license bundle was retained. The rejected ad2db EXE/manifest remain in the earlier local download evidence for recovery.
+
+All four draft assets were downloaded into a new empty `artifacts/draft-e099-download-5e4aa66b3ab649b2be9b53bd38ddbd9c` directory and matched local hashes AND sizes. Downloaded EXE passed enhanced isolated light and dark smoke (current DPAPI history committed, no unfinished writes). Final remote state remains `isDraft=true`, target28957d4; no public tag. Anonymous asset HEAD, without a token, returned HTTP404. This is verified draft preparation, NOT public release acceptance or anonymous-download success.
+
 ## Remaining scope
 
 This is one bounded desktop QA session, NOT full release acceptance. Alpha/PNG transparency, Notepad/Explorer/browser/other receivers, pause/privacy/exclusions, hotkey conflict rollback, production lifecycle, UI backup restore, clean Windows without desktop runtime, prolonged stress and leak attribution remain separate checks. No public binary release was promoted on the strength of this session alone.

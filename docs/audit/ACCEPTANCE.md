@@ -8,7 +8,7 @@
 - Файл: `artifacts/release-28957d4/NeClipboardWin-win-x64.exe`, 173 098 041 байт, версия 0.2.0.0, Windows 11 x64, self-contained .NET 10. **Не подписан**; предупреждения Windows не обходились.
 - SHA-256: `e09942e870045c4b0f3eca5906577357cb7b279acc3a525e8afa23f8ac112042`.
 - [GitHub CI 38146154038](https://github.com/AffPapa/neclipboard-win/actions/runs/38146154038): SUCCESS, опубликованный в логе SHA совпадает с локальным EXE.
-- Существующий GitHub draft содержит старый, отвергнутый кандидат `ad2dbf…`. Его нельзя публиковать как проверенный файл; публичная ссылка скачивания 0.2.0 пока не включена.
+- Существующий GitHub draft обновлён на точный кандидат `e09942e8…` / source `28957d4…`. Все четыре скачанных обратно assets совпали по hash/размеру; downloaded EXE прошёл усиленный light/dark smoke. Старый отвергнутый `ad2dbf…` сохранён локально. Draft не опубликован; анонимный download возвращает HTTP 404, публичный tag не создан.
 
 ## Подтверждённые проверки
 
@@ -48,7 +48,7 @@
 3. Старый EXE и полный downgrade — только отдельное чистое Windows-окружение: fault handler старой сборки может обращаться к production diagnostics. Ни production-данные, ни системные настройки не рисковались ради проверки.
 4. Производственный idle ≥10 минут, нагрузка 30–60 минут, повторное открытие палитры, handles/GDI/USER, полезная готовность UI/hotkey. 96 изолированных запусков не заменяют эти измерения и не доказывают отсутствие утечек.
 5. Чистая Windows без SDK/Desktop Runtime, production second instance, тихий sign-in autostart, sleep/resume, Explorer restart, RDP и elevated receiver. Доступного подготовленного чистого окружения пока нет.
-6. Цепочка публикации: принятый неизменный SHA → замена отвергнутых draft assets с проверкой → tag/public release → анонимное скачивание/hash/smoke → сайт с настоящими датой, ссылкой, размером, SHA и release changelog. Настоящие снимки тестового окна уже размещены в версии сайта 11.
+6. Цепочка публикации: завершить приёмку неизменного SHA → tag/public release → анонимное скачивание/hash/smoke → сайт с настоящими датой, ссылкой, размером, SHA и release changelog. Замена отвергнутых draft assets, authenticated download/hash и downloaded smoke уже выполнены. Настоящие снимки тестового окна размещены в версии сайта 11.
 
 ## Границы функций
 
