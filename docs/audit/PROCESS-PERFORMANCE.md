@@ -2,7 +2,19 @@
 
 Measured 2026-10-11. These are bounded process observations, not a claim that desktop E2E or final release acceptance is complete. Historical measurements below are labelled separately.
 
-## Corrected source-bound candidate: profile scaling
+## Final source-bound candidate: repeated profile scaling
+
+Commit `28957d4a3645b0b8c945b753ec409986c516da7c`, EXE SHA-256 `e09942e870045c4b0f3eca5906577357cb7b279acc3a525e8afa23f8ac112042`. **96/96 noninteractive isolated launches PASS**, six warmups plus 30 measured launches per profile. Direct DPAPI/JSON assertions verify exact synthetic semantics, completed current documents and absence of unfinished writes; no desktop integrations or clipboard operations.
+
+| Profile | Input-idle p50 / p95 | Sampled peak Private Bytes p50 |
+| --- | --- | --- |
+| Empty | 467.44 / 555.47 ms | 37.19 MiB |
+| 200 entries | 513.20 / 987.55 ms | 47.00 MiB |
+| 1000 entries | 556.10 / 1576.86 ms | 108.30 MiB |
+
+**Concurrent coordinator UI tests and uncontrolled workstation activity** make this a functional load regression check, not a controlled speed comparison to earlier results. Input-idle is not rendered readiness or hotkey latency. Sampled memory is not steady-state allocation or leak evidence. Whole-process time includes the one-second QA timer and awaited shutdown serialization. Raw ignored evidence: `artifacts/profile-scaling-f3c75ca54f3541c2aa8db3565e7bf948/{environment,samples,summary,completion,concurrency-context}.json`. Three synthetic profiles were removed after successful completion.
+
+## Historical corrected candidate: profile scaling
 
 Commit `7775cb310f9c85e00ae200694032e8550cbd0868`, EXE SHA-256 `7785e45c62e440ac18845cbb660c7742b761a40a1721a49f484d3e541f6240ae`. **96/96 noninteractive isolated launches PASS**: two warmups and 30 measured rotating rounds for each of three profiles. A separate nine-launch pilot passed first. Every exit checked current history presence, absence of unfinished `.tmp`/quarantine, and exact synthetic settings/history values through direct DPAPI/JSON rather than a recovering store Load. DPAPI ciphertext may change on ordinary exit; it is not a semantic equality criterion.
 

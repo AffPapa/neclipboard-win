@@ -3,19 +3,20 @@
 The existing public Site was updated, not replaced with another project.
 
 - URL: https://neclipboard-win.mail782861.chatgpt.site
-- Saved Site version: 10 (not the application version).
-- Source commit: `1ede2cbbd593454a03e681ecced666a9a8ba25aa`.
+- Saved Site version: 11 (not the application version).
+- Source commit: `e4188191410f1df55eba9ef70f3c0220c27ffa7c`.
+- Deployment: `appgdep_6acb9cd51204819182bab392f2824ed9`, succeeded 2026-10-11T14:27:50Z.
 - Deployment status returned by Sites: `succeeded`.
 - Application status on the page: **0.2.0 candidate, no public binary download yet**. GitHub link points to the verified public repository `AffPapa/neclipboard-win`; no public asset URL is claimed.
 
 ## Checks performed
 
-- Production build and TypeScript `--noEmit`: PASS.
-- Version 10 was reloaded in the browser: repository link confirmed in the DOM and light desktop screenshot inspected. Local evidence: `outputs/neclipboard-site-v10-proof.png` in the parent workspace. Version 9 mobile/FAQ checks below were not repeated on version 10.
-- Home page HTTP 200, desktop screenshot and 390×844 mobile screenshots: PASS for readable layout without observed overlap.
-- Changelog navigation and expanded .NET FAQ: PASS through browser interaction.
+- Version 11 production build: PASS (existing upstream dynamic-import warnings retained). TypeScript `--noEmit` and FAQ checks below were performed on older versions, not rerun for this screenshot/content-only change.
+- Version 11 public home opened in the browser: caption, GitHub link, actual image load 768×674 and light desktop layout confirmed. Local proof: `outputs/neclipboard-site-v11-proof.png` in the parent workspace.
+- Version 11 local preview desktop and requested 390×844 mobile viewport: native image loaded; DOM content width equals client width (375 CSS px), no observed horizontal overflow. Browser viewport override reset afterwards. This is not a fresh mobile public-environment check.
+- Version 11 public changelog navigation: both latest shutdown/accessibility fixes visible, candidate disclaimer retained. Expanded .NET FAQ: historical PASS, not repeated in version 11.
 - Home/changelog prerender: PASS. Removed unused starter API endpoint.
-- Clear, flat Windows clipboard palette schematic replaces ambiguous decorative presentation; it is explicitly labelled as a schematic, not a screenshot.
+- Version 11 replaces the schematic with full, unedited native light/dark QA-window screenshots from the exact e099/28957d4 application. Only synthetic text/file entries are shown; test profile and disabled integrations are explicitly labelled. No generated UI or personal profile is presented as product evidence. Both assets packaged; light asset rendering confirmed in browser. Dark browser media selection remains unverified.
 - CSS follows system light/dark preference and reduced-motion settings. This run visually inspected the light Site only; dark browser rendering and a full accessibility audit remain unverified.
 
 ## Dependency risk
