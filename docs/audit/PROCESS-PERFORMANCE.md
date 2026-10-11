@@ -1,6 +1,20 @@
 # Process-level performance observations
 
-Measured 2026-10-11. These are process observations of intermediate self-contained builds, not a claim that desktop E2E or final release acceptance is complete.
+Measured 2026-10-11. These are bounded process observations, not a claim that desktop E2E or final release acceptance is complete. Historical measurements below are labelled separately.
+
+## Corrected source-bound candidate: profile scaling
+
+Commit `7775cb310f9c85e00ae200694032e8550cbd0868`, EXE SHA-256 `7785e45c62e440ac18845cbb660c7742b761a40a1721a49f484d3e541f6240ae`. **96/96 noninteractive isolated launches PASS**: two warmups and 30 measured rotating rounds for each of three profiles. A separate nine-launch pilot passed first. Every exit checked current history presence, absence of unfinished `.tmp`/quarantine, and exact synthetic settings/history values through direct DPAPI/JSON rather than a recovering store Load. DPAPI ciphertext may change on ordinary exit; it is not a semantic equality criterion.
+
+| Profile | Text payload | Input-idle p50 / p95 | Sampled peak Private Bytes p50 |
+| --- | --- | --- | --- |
+| Empty | 0 | 356.65 / 392.63 ms | 37.05 MiB |
+| 200 entries | about 0.78 MiB | 403.71 / 438.96 ms | 47.05 MiB |
+| 1000 entries | about 7.82 MiB | 418.47 / 475.90 ms | 108.16 MiB |
+
+`WaitForInputIdle` is an OS observable, **not rendered palette readiness, usable input or hotkey latency**. No window was shown, no listener/tray/global clipboard/production profile was exercised. Whole-process resource observations include startup, the one-second QA timer and completed exit serialization; the timer was not subtracted to invent a startup estimate. These are sampled peaks, not steady-state allocation, GC or leak measurements. Maximum observed OS peak Working Set was 173.70 MiB in the 1000-entry case. Background workstation activity was not controlled. Raw ignored evidence: `artifacts/profile-scaling-e483ac8dd5ad4fd1b97f74807ba9d762/{environment,samples,summary,cleanup}.json`. Three synthetic profiles were removed after the successful run.
+
+An observer of the older `ad2dbf…` desktop QA process was stopped at the coordinator's request after 120.317 seconds / 25 samples to prioritize the shutdown regression. The application was not stopped. This is **not** a completed ten-minute idle or a measurement of the corrected EXE.
 
 ## Additional 601-second observation of the UX candidate
 
