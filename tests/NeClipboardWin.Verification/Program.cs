@@ -59,6 +59,7 @@ try
     Run("oversized file rejected before allocation", () => TestOversizedFile(testRoot));
     Run("image validation and pixel bounds", () => TestImages(testRoot));
     Run("atomic save write failure", () => TestWriteFailure(testRoot));
+    Run("atomic partial temporary-file write failure", () => TestPartialWriteFailure(testRoot));
     Run("restore transaction rollback", () => TestRestoreRollback(testRoot));
     Run("restore recovery blocks unsafe writes", () => TestRestoreRecoveryRequired(testRoot));
     Run("restore abrupt process termination", () => TestRestoreProcessCrash(testRoot));
@@ -101,6 +102,10 @@ static void TestSnippetErrorAccessibility()
             {
                 var error = (System.Windows.Controls.TextBlock)typeof(SnippetEditorWindow)
                     .GetField("_errorText", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(editor)!;
+                var titleBox = (System.Windows.Controls.TextBox)typeof(SnippetEditorWindow)
+                    .GetField("_titleBox", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(editor)!;
+                var contentBox = (System.Windows.Controls.TextBox)typeof(SnippetEditorWindow)
+                    .GetField("_contentBox", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(editor)!;
                 var showError = typeof(SnippetEditorWindow)
                     .GetMethod("ShowError", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 foreach (var message in new[] { "Укажите название заготовки.", "Добавьте текст заготовки." })
@@ -116,6 +121,20 @@ static void TestSnippetErrorAccessibility()
                         == System.Windows.Automation.AutomationLiveSetting.Assertive,
                         "Important validation messages must remain an assertive live region.");
                 }
+                showError.Invoke(editor, ["Укажите название заготовки."]);
+                titleBox.Text = "Corrected title";
+                Expect(error.Visibility == System.Windows.Visibility.Collapsed,
+                    "A corrected blank-field error must clear once both required fields are valid.");
+
+                titleBox.Text = string.Empty;
+                contentBox.Text = string.Empty;
+                showError.Invoke(editor, ["Укажите название заготовки."]);
+                titleBox.Text = "Corrected title";
+                Expect(error.Text == "Добавьте текст заготовки." && error.Visibility == System.Windows.Visibility.Visible,
+                    "Correcting the title while content is still empty must point to the remaining field.");
+                contentBox.Text = "Corrected content";
+                Expect(error.Visibility == System.Windows.Visibility.Collapsed,
+                    "The blank-field message must clear as soon as both required fields are valid.");
                 Expect(editor.Result.Title == "Synthetic title"
                     && editor.Result.Content == "Synthetic Unicode 😀\r\nSecond line",
                     "Displaying errors must not lose entered data.");
@@ -546,6 +565,47 @@ static void TestWriteFailure(string root)
     using (var held = new FileStream(Path.Combine(directory, "history.dat"), FileMode.Open, FileAccess.Read, FileShare.None))
         Expect(!store.TrySave([new ClipboardEntry { Payload = "blocked write" }]), "Sharing violation must be handled.");
     Expect(store.Load().Single().Payload == "committed", "Locked-file failure must preserve committed contents.");
+}
+
+static void TestPartialWriteFailure(string root)
+{
+    const string faultPoint = "atomic.during-temp-write";
+    var directory = Path.Combine(root, "partial-write-" + faultPoint.Replace('.', '-'));
+    var store = new EncryptedHistoryStore(directory);
+    Expect(store.TrySave([new ClipboardEntry { Payload = "previous generation" }]), "Prepare previous generation.");
+    Expect(store.TrySave([new ClipboardEntry { Payload = "committed generation" }]), "Prepare current generation.");
+
+    var currentPath = Path.Combine(directory, "history.dat");
+    var previousPath = Path.Combine(directory, "history.prev.dat");
+    var currentBefore = File.ReadAllBytes(currentPath);
+    var previousBefore = File.ReadAllBytes(previousPath);
+    try
+    {
+        StorageSafety.FaultInjection = point =>
+        {
+            if (point == faultPoint) throw new IOException("Injected isolated partial temporary-file write failure.");
+        };
+        Expect(!store.TrySave([new ClipboardEntry { Payload = "must not commit" }]),
+            $"Failure at {faultPoint} must be reported.");
+    }
+    finally { StorageSafety.FaultInjection = null; }
+
+    Expect(File.ReadAllBytes(currentPath).SequenceEqual(currentBefore),
+        $"Failure at {faultPoint} must preserve current bytes exactly.");
+    Expect(File.ReadAllBytes(previousPath).SequenceEqual(previousBefore),
+        $"Failure at {faultPoint} must preserve previous bytes exactly.");
+    Expect(!Directory.EnumerateFiles(directory, "*.tmp").Any(),
+        $"Failure at {faultPoint} must remove the incomplete temporary file.");
+    Expect(store.Load().Single().Payload == "committed generation",
+        $"Failure at {faultPoint} must leave the current generation readable.");
+
+    Expect(store.TrySave([new ClipboardEntry { Payload = "successful retry" }]),
+        $"A save must succeed after removing the {faultPoint} fault.");
+    Expect(File.ReadAllBytes(previousPath).SequenceEqual(currentBefore),
+        "Successful retry must rotate the original current generation into the previous slot.");
+    Expect(store.Load().Single().Payload == "successful retry"
+        && new EncryptedHistoryStore(directory).Load().Single().Payload == "successful retry",
+        "The successful retry must be readable after reopening the store.");
 }
 
 static (SettingsService Settings, EncryptedHistoryStore History) PrepareRestore(string directory)

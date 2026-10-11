@@ -44,6 +44,8 @@ public sealed class SnippetEditorWindow : Window
         _contentBox.AcceptsReturn = true;
         _contentBox.TextWrapping = TextWrapping.Wrap;
         _contentBox.VerticalScrollBarVisibility = WpfControls.ScrollBarVisibility.Auto;
+        _titleBox.TextChanged += (_, _) => RefreshBlankFieldError();
+        _contentBox.TextChanged += (_, _) => RefreshBlankFieldError();
 
         ThemeManager.Bind(_titleBox, WpfControls.TextBox.BackgroundProperty, "SurfaceRaisedBrush");
         ThemeManager.Bind(_titleBox, WpfControls.TextBox.ForegroundProperty, "TextBrush");
@@ -134,5 +136,27 @@ public sealed class SnippetEditorWindow : Window
         _errorText.Visibility = Visibility.Visible;
         FrameworkElementAutomationPeer.CreatePeerForElement(_errorText)?
             .RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+    }
+
+    private void RefreshBlankFieldError()
+    {
+        if (_errorText.Visibility != Visibility.Visible
+            || (_errorText.Text != "Укажите название заготовки." && _errorText.Text != "Добавьте текст заготовки."))
+            return;
+
+        var message = string.IsNullOrWhiteSpace(_titleBox.Text)
+            ? "Укажите название заготовки."
+            : string.IsNullOrWhiteSpace(_contentBox.Text)
+                ? "Добавьте текст заготовки."
+                : null;
+        if (message is null)
+        {
+            _errorText.Visibility = Visibility.Collapsed;
+            _errorText.Text = string.Empty;
+        }
+        else if (_errorText.Text != message)
+        {
+            ShowError(message);
+        }
     }
 }

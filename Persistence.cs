@@ -150,7 +150,16 @@ public sealed class SettingsService
         {
             using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                stream.Write(data);
+                // Keep the normal production path to a single write. Verification can
+                // install the internal fault hook to fail after a real partial temp write.
+                if (data.Length > 1 && StorageSafety.FaultInjection is not null)
+                {
+                    var firstChunkLength = data.Length / 2;
+                    stream.Write(data.AsSpan(0, firstChunkLength));
+                    StorageSafety.Fault("atomic.during-temp-write");
+                    stream.Write(data.AsSpan(firstChunkLength));
+                }
+                else stream.Write(data);
                 stream.Flush(flushToDisk: true);
             }
             StorageSafety.Fault("atomic.before-replace");

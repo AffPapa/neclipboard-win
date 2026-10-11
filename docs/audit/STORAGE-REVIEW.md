@@ -56,7 +56,7 @@
 - ранний отказ oversized file, глубина/число JSON-токенов/escaped strings;
 - plaintext и encrypted legacy migration;
 - malformed Base64/PNG и pixel limit;
-- отказ перед atomic replacement и реальная Windows sharing violation;
+- исключение после реальной частичной записи временного файла: current и previous сверяются побайтно, temp удаляется, затем успешный retry подтверждает штатный atomic save; также отказ перед atomic replacement и реальная Windows sharing violation;
 - verified rollback после первой замены, отказ во время rollback, запрещённые новые writes, успешный retry;
 - четыре отдельные аварийно завершаемые child-process fixtures: после журнала, после settings, после history, перед commit;
 - malformed recovery journal сохраняет исходные файлы и блокирует новые writes;
