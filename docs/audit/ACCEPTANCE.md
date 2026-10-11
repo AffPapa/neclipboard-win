@@ -10,6 +10,8 @@
 
 Финальный commit-bound EXE: SHA-256 `ad2dbfe85b235084047a84551e8106f5104a60c0836b507e7ea43ad49d30978f`, 173 098 041 байт, 0.2.0.0, NotSigned. Локальная сборка и CI совпали побайтно. Draft v0.2.0 загружен; четыре assets скачаны и проверены без изменений; скачанный EXE прошёл light/dark isolated smoke. **Это черновик, не публичный релиз и не завершённая desktop/upgrade приёмка.**
 
+Скачанный EXE также прошёл **четыре binary-level startup recovery сценария**: аварийное завершение после journal/settings/history и перед commit. Helper только подготовил синтетическое прерванное восстановление; startup recovery выполнил именно EXE с этим SHA в `--qa-isolated` без отображения окна и desktop-интеграций. Все четыре ciphertext-файла восстановились побайтно, DPAPI/JSON значения проверены напрямую без вызова service Load/Recover; pending journal и rollback-каталог убраны, exit 0. Локальное ignored evidence: `artifacts/final-binary-startup-recovery-results.json`. Это не UI backup/restore и не полный production upgrade/rollback.
+
 В этом EXE визуально осмотрены тёмная пустая история, настройки и backup-секция. Диалог сохранения backup открылся; автоматизация имени файла не подтвердилась, поэтому операция отменена. Создание копии не считается PASS. Clipboard fixture повторно отказался до записи из-за неизвестного формата исходного буфера; text/PNG/files E2E остаётся PENDING. Пользовательские данные не очищались.
 
 Sites version 10 успешно опубликована, source `1ede2cbbd593454a03e681ecced666a9a8ba25aa`: ссылка на репозиторий и новые UX изменения кандидата; download пока отключён. Последующие сведения о неподключённом GitHub и старых hashes ниже — исторические, заменены этим дополнением.
